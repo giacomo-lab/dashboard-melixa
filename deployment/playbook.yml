@@ -1,0 +1,34 @@
+---
+
+- hosts: app
+  name: Deploy Streamlit app.
+  vars:
+    file_and_dir_group: deployers
+
+
+    docker_compose_folder: "{{ platform_base_folder }}/{{project_name}}-{{ service_environment }}-app"
+    docker_file_template: templates/docker-compose.yml.j2
+    docker_services:
+      - app
+
+    docker_volumes: []
+
+    app_container_name: "{{project_name}}-{{ service_environment }}"
+
+
+    traefik_template_config_file_path: templates/traefik.yml.j2
+    traefik_config_file_name: "{{project_name}}-{{ service_environment }}.yml"
+    traefik_become: false
+
+    docker_networks: "{{ service_networks }}"
+
+    site_postgres_user: postgres
+    site_postgres_password: "{{ postgress_root_password }}"
+
+    tear_down: false
+    tear_down_remove_traefik: true
+    tear_down_remove_volumes: false
+
+
+  roles:
+    - uh.deploy-docker-service
