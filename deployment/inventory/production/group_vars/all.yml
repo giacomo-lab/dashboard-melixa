@@ -29,12 +29,10 @@ registry_password: !vault |
 
 proxy_network: "proxy-entrypoint"
 
-service_network: "nostradamus"
 service_networks:
-  - "{{ service_network }}"
   - "{{ proxy_network }}"
 
-platform_base_folder: "/opt/deployments/nostradamus/pocs/{{ project_name }}/{{ service_environment }}"
+platform_base_folder: "/opt/deployments/agribee/{{ project_name }}/{{ service_environment }}"
 
 app_domain: demo.agribee.u-hopper.com
 
