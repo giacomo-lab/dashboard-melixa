@@ -1,0 +1,95 @@
+---
+- name: Setup Python project.
+  hosts: 127.0.0.1
+  connection: local
+  vars:
+    project_type: python
+    project_path: .
+    project_features:
+      - ci_cd
+      - test
+      - docker
+      - deploy
+    docker_image_name: agribee/demo
+    project_python_test_folder: test
+    project_python_submodules: []
+    project_default_branch: main
+    docker_python_services:
+      - name: demo_agribee
+        custom_start_command: exec streamlit run demo/Home.py --server.port=8501
+          --server.address=0.0.0.0 --server.fileWatcherType none
+    docker_python_image_base_image: public.registry.u-hopper.com/python:3.12
+    python_image_base_image: public.registry.u-hopper.com/python:3.12
+    ci_docker_image: docker:20.10.4
+    ci_allowed_environments:
+      - production
+      - production_sales_team
+      - staging
+      - mr
+      - default
+    ci_environment_tags:
+      production: $CI_COMMIT_TAG
+      production_sales_team: $CI_COMMIT_TAG
+      staging: latest
+      issue: latest
+      milestone: latest
+      mr: latest
+      default: latest
+    ci_default_only:
+      production:
+        - tags
+      production_sales_team:
+        - tags
+      staging:
+        - develop
+      mr:
+        - merge_requests
+      default:
+        - "{{ project_default_branch }}"
+    ci_additional_badges: []
+    ci_environments:
+      default:
+        stages:
+          - name: build
+            type: badge
+      mr:
+        stages:
+          - name: test
+            with_cache: false
+          - name: test
+            type: coverage
+            with_cache: false
+          - name: test
+            allow_failure: false
+            ignore: E501,W504,E241,F405,F403
+            type: lint
+      production:
+        stages:
+          - name: build
+          - name: build
+            type: badge
+          - name: test
+            in_docker: false
+            with_cache: false
+          - name: test
+            type: coverage
+            with_cache: false
+          - name: push
+          - name: deploy
+            environment_url: https://demo.agribee.u-hopper.com
+            manual: true
+      staging:
+        stages:
+          - name: build
+            manual: true
+          - name: test
+            in_docker: false
+            with_cache: false
+          - name: test
+            type: coverage
+            with_cache: false
+          - name: push
+          - name: deploy
+            environment_url: https://staging.demo.agribee.u-hopper.com
+  roles:
+    - uh.project_template

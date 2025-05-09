@@ -1,0 +1,24 @@
+---
+- hosts: localhost
+  vars:
+    pipeline_trigger: "{{ lookup('env','CI_DEPLOY_TOKEN') }}"
+    git_ref: "{{ lookup('env','GIT_REF') }}"
+    deployment_repo_id: "{{ lookup('env','DEPLOYMENT_REPO_ID') }}"
+
+    deployment_env: "{{ [['variables[DEPLOYMENT_ENV]', lookup('env','DEPLOYMENT_ENV')]] if lookup('env','DEPLOYMENT_ENV') else [] }}" # Production or staging
+    service_version: "{{ [['variables[SERVICE_VERSION]', lookup('env','SERVICE_VERSION')]] if lookup('env','SERVICE_VERSION') else [] }}" # image version latest, 0.1.1
+
+    request_body_token:
+      - [ "token", "{{pipeline_trigger}}" ]
+      - [ "ref", "{{ git_ref }}"]
+
+    request_body: "{{ request_body_token + deployment_env + service_version}}"
+  tasks:
+
+    - name: Trigger external pipeline
+      uri:
+        url: https://lab.u-hopper.com/api/v4/projects/{{ deployment_repo_id }}/trigger/pipeline
+        body_format: form-urlencoded
+        method: POST
+        body: "{{request_body}}"
+        status_code: [200, 201, 202]

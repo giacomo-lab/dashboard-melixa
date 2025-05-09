@@ -1,0 +1,45 @@
+---
+
+ansible_user: deploy
+ansible_ssh_private_key_file: ~/.ssh/id_rsa
+ansible_python_interpreter: /usr/bin/python3
+file_and_dir_group: deployers
+
+
+service_environment: "production"
+
+
+project_name: agribee_demo
+app_image_name: registry.u-hopper.com/agribee/demo
+app_image_version: "{{ lookup('env', 'CI_COMMIT_TAG') }}"
+
+
+registry_url: registry.u-hopper.com
+registry_username: gitlab
+registry_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          63626365613338633635383538636462636461396262313937346336373030633238393361653236
+          3065613231383636366361316539656332303835396435320a623165326637623832646463333462
+          64383637396664306530616563396635323735626238343164366537666364383532393733356261
+          3438356334306536630a393061626233333133626663353263643730366438383136643464363235
+          65613830663134303565363766393635333438616136386566373930656463653931616664656135
+          3634363566393635653338346461663730643164326363346133
+
+
+
+proxy_network: "proxy-entrypoint"
+
+service_network: "nostradamus"
+service_networks:
+  - "{{ service_network }}"
+  - "{{ proxy_network }}"
+
+platform_base_folder: "/opt/deployments/nostradamus/pocs/{{ project_name }}/{{ service_environment }}"
+
+app_domain: demo.agribee.u-hopper.com
+
+basic_auth_hashs:
+  - afliant:$apr1$nlOIc6nV$Ar1FIzTaOF.SJcslESx/D0
+
+
+# add all env variables here, such as collection ids. All env vars are to be defined also in docker-compose
