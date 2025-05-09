@@ -1,0 +1,27 @@
+
+version : "3"
+services:
+
+  app:
+    image:  {{app_image_name}}:{{ app_image_version }}
+    container_name: {{ app_container_name }}
+    hostname: {{ app_container_name }}
+    restart: unless-stopped
+    command: ./run.sh
+    environment:
+    networks:
+{% for net in service_networks %}
+        - {{ net }}
+{% endfor %}
+    logging:
+      driver: "json-file"
+      options:
+            max-size: "100m"
+            max-file: "10"
+
+
+networks:
+{% for net in service_networks %}
+    {{ net }}:
+        external: true
+{% endfor %}

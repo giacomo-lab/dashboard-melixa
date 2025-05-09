@@ -1,0 +1,5 @@
+[hetzner8]
+h7.u-hopper.com
+
+[app:children]
+hetzner8

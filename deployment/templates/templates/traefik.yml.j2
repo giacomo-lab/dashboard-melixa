@@ -1,0 +1,30 @@
+---
+
+http:
+    routers:
+
+        {{project_name}}-{{ service_environment }}-app:
+            service: {{project_name}}-{{ service_environment }}-app
+            rule: "Host(`{{ app_domain }}`)"
+            entrypoints:
+                - http
+                - https
+            middlewares:
+                - {{project_name}}_{{service_environment}}_basic_auth
+            tls:
+                certResolver: le
+
+    middlewares:
+        {{project_name}}_{{service_environment}}_basic_auth:
+            basicAuth:
+                users:
+{% for basic_auth_hash in basic_auth_hashs%}
+                    - "{{basic_auth_hash}}"
+{%endfor%}
+
+
+    services:
+        {{project_name}}-{{ service_environment }}-app:
+            loadBalancer:
+                servers:
+                    - url: http://{{ app_container_name }}.{{ proxy_network }}:8501
