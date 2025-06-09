@@ -1,1 +1,6 @@
 streamlit
+mlserver-mlflow
+mlserver
+requests
+pandas
+numpy
