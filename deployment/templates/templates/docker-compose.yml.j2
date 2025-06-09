@@ -8,7 +8,9 @@ services:
     hostname: {{ app_container_name }}
     restart: unless-stopped
     command: ./run.sh
-    # environment:
+    environment:
+      MLSERVER_USERNAME: {{mlserver_username}}
+      MLSERVER_PASSWORD: {{mlserver_password}}
     networks:
 {% for net in service_networks %}
         - {{ net }}
