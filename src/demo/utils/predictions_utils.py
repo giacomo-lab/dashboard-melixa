@@ -19,7 +19,7 @@ def retrieve_predictions(data: pd.DataFrame) -> (np.array or None):
     # check columns and, in case missing, add zeros
     missing_cols = set(cols) - set(data.columns)
 
-    st.warning(f"Missing columns: {missing_cols}")
+    # st.warning(f"Missing columns: {missing_cols}")
 
     # add missing columns
     data = add_missing_columns(list(missing_cols), data)
