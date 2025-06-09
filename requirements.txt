@@ -1,4 +1,5 @@
 streamlit
+watchdog
 mlserver-mlflow
 mlserver
 requests

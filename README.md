@@ -12,7 +12,12 @@ Install the requirements with
 pip install -r requirements.txt
 ```
 
-Run the dashboard fro `src` with
+Export environment variables:
+- MLSERVER_USERNAME=<your_username>
+- MLSERVER_PASSWORD=<your_password>
+- PYTHONPATH="."
+
+Run the dashboard from `src` with
 
 ```bash
   streamlit run demo/Home.py
