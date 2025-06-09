@@ -4,7 +4,6 @@ import pandas as pd
 import requests
 from mlserver.codecs import PandasCodec
 from mlserver.types import InferenceResponse
-import streamlit as st
 import numpy as np
 
 
