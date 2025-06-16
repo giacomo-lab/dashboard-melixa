@@ -326,12 +326,12 @@ def main():
             # Create prediction map with selection capability
             fig = create_prediction_map(filtered_df, selected_week)
             
-            # Add visual indicators for already selected locations as gold stars
+            # Add visual indicators for already selected locations green circle
             if st.session_state.selected_locations:
                 # Filter for selected locations that are still in the current filtered dataset
                 selected_locations_df = filtered_df[filtered_df['GRID_ID'].isin(st.session_state.selected_locations.keys())]
                 if not selected_locations_df.empty:
-                    # Add selected locations as a separate trace with gold star styling
+                    # Add selected locations as a separate trace as green circles
                     fig.add_trace(
                         go.Scattermapbox(
                             lat=selected_locations_df["Latitudine"],
@@ -348,7 +348,6 @@ def main():
                             showlegend=True  # Show in legend
                         )
                     )
-                    st.info(f"⭐ **{len(selected_locations_df)} selected locations** shown as gold stars on the map")
             
             st.info("💡 **Click on map points to select locations for hive placement**")
             
@@ -434,7 +433,7 @@ def main():
                 st.write("**How to select locations:**")
                 st.write("1. 🖱️ Click on any colored point on the map")
                 st.write("2. 📍 Selected locations will appear in this panel")
-                st.write("3. ⭐ Selected locations will show as **gold stars** on the map")
+                st.write("3. 🟢 Selected locations will show in green on the map")
                 st.write("4. 📅 Use selected locations in the Calendar tab")
     
     with tab2:
