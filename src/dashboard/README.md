@@ -21,7 +21,7 @@ A Streamlit dashboard for analyzing honey production predictions and scheduling 
 
 ### Installation
 ```bash
-pip install streamlit pandas plotly folium streamlit-folium streamlit-calendar
+pip install -r requirements.txt
 ```
 
 ### Run Dashboard
