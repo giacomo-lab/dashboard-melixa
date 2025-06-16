@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple
 import re
+from typing import Dict, List
+
 
 def load_and_validate_data(file_path: str) -> pd.DataFrame:
     """
@@ -41,10 +42,11 @@ def load_and_validate_data(file_path: str) -> pd.DataFrame:
         print(f"Error loading data: {e}")
         return pd.DataFrame()
 
+
 def calculate_prediction_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate various prediction metrics for each location
-    
+
     Args:
         df: DataFrame with prediction columns
         
@@ -87,6 +89,7 @@ def calculate_prediction_metrics(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
+
 def extract_week_number(week_column: str) -> int:
     """Extract week number from column name"""
     if pd.isna(week_column):
@@ -94,6 +97,7 @@ def extract_week_number(week_column: str) -> int:
     
     match = re.search(r'(\d+)', str(week_column))
     return int(match.group(1)) if match else 0
+
 
 def get_peak_period(row: pd.Series, prediction_cols: List[str]) -> str:
     """
@@ -136,6 +140,7 @@ def get_peak_period(row: pd.Series, prediction_cols: List[str]) -> str:
         return f"Weeks {longest_period[0]}-{longest_period[-1]}"
     else:
         return f"Extended period (Weeks {longest_period[0]}-{longest_period[-1]})"
+
 
 def filter_data(df: pd.DataFrame, filters: Dict) -> pd.DataFrame:
     """
@@ -182,6 +187,7 @@ def filter_data(df: pd.DataFrame, filters: Dict) -> pd.DataFrame:
         filtered_df = filtered_df[filtered_df['quality_score'] >= filters['min_quality']]
     
     return filtered_df
+
 
 def get_location_recommendations(df: pd.DataFrame, n_recommendations: int = 5) -> List[Dict]:
     """
@@ -236,6 +242,7 @@ def get_location_recommendations(df: pd.DataFrame, n_recommendations: int = 5) -
     
     return recommendations[:n_recommendations * 2]  # Return some variety
 
+
 def calculate_spatial_clusters(df: pd.DataFrame, n_clusters: int = 5) -> pd.DataFrame:
     """
     Identify spatial clusters of high-performing locations
@@ -282,6 +289,7 @@ def calculate_spatial_clusters(df: pd.DataFrame, n_clusters: int = 5) -> pd.Data
         df['cluster'] = 0
         return df
 
+
 def generate_summary_stats(df: pd.DataFrame) -> Dict:
     """
     Generate summary statistics for the dataset
@@ -315,6 +323,7 @@ def generate_summary_stats(df: pd.DataFrame) -> Dict:
     
     return stats
 
+
 def export_location_data(locations: Dict, format: str = 'csv') -> str:
     """
     Export selected location data
@@ -337,6 +346,7 @@ def export_location_data(locations: Dict, format: str = 'csv') -> str:
         return df.to_json(orient='records', indent=2)
     else:
         return str(df)
+
 
 def validate_coordinates(lat: float, lon: float) -> bool:
     """

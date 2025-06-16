@@ -2,15 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import numpy as np
 from datetime import datetime, timedelta
 import json
-from typing import Dict, List
 import folium
-from streamlit_folium import st_folium
 from streamlit_calendar import calendar
-import plotly.colors as pc
 
 # Page configuration
 st.set_page_config(
@@ -146,7 +142,7 @@ def create_prediction_map(df, selected_week=None, metric='avg_prediction'):
         title=title,
         height=600
     )
-    
+
     fig.update_layout(
         mapbox=dict(
             center=dict(lat=df['Latitudine'].mean(), lon=df['Longitudin'].mean())
@@ -156,85 +152,6 @@ def create_prediction_map(df, selected_week=None, metric='avg_prediction'):
     
     return fig
 
-def create_folium_map(df, selected_locations=None, selected_week=None):
-    """Create a Folium map with clickable markers"""
-    if df.empty:
-        return None
-    
-    # Center map on mean coordinates
-    center_lat = df['Latitudine'].mean()
-    center_lon = df['Longitudin'].mean()
-    
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=9)
-    
-    # Add markers for each location
-    for idx, row in df.iterrows():
-        # Get prediction score for selected week or use average
-        if selected_week and f'week_{selected_week}_prediction' in df.columns:
-            prediction_score = row[f'week_{selected_week}_prediction']
-            score_label = f"Week {selected_week}"
-        else:
-            prediction_score = row['avg_prediction']
-            score_label = "Avg"
-        
-        # Color based on prediction score
-        color = 'red' if prediction_score < 0.3 else 'orange' if prediction_score < 0.6 else 'green'
-        
-        # Special styling for selected locations
-        if selected_locations and row['GRID_ID'] in selected_locations:
-            color = 'blue'
-            icon = folium.Icon(color=color, icon='star')
-        else:
-            icon = folium.Icon(color=color)
-        
-        # Create popup content
-        popup_content = f"""
-        <b>ID:</b> {row['GRID_ID']}<br>
-        <b>Altitude:</b> {row['Altitudine']}m<br>
-        <b>{score_label} Prediction:</b> {prediction_score:.3f}<br>
-        <b>Avg Prediction:</b> {row['avg_prediction']:.3f}<br>
-        <b>Best Week:</b> {row['best_week_num']}
-        """
-        
-        folium.Marker(
-            [row['Latitudine'], row['Longitudin']],
-            popup=folium.Popup(popup_content, max_width=300),
-            tooltip=f"ID: {row['GRID_ID']} | {score_label}: {prediction_score:.3f}",
-            icon=icon
-        ).add_to(m)
-    
-    return m
-
-def create_weekly_predictions_chart(df, location_id):
-    """Create a chart showing weekly predictions for a specific location"""
-    if df.empty or location_id not in df['GRID_ID'].values:
-        return go.Figure()
-    
-    location_data = df[df['GRID_ID'] == location_id].iloc[0]
-    prediction_cols = [col for col in df.columns if 'prediction' in col]
-    
-    weeks = [int(col.split('_')[1]) for col in prediction_cols]
-    predictions = [location_data[col] for col in prediction_cols]
-    
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=weeks,
-        y=predictions,
-        mode='lines+markers',
-        name='Prediction Score',
-        line=dict(color='#FF8C00', width=3),
-        marker=dict(size=8)
-    ))
-    
-    fig.update_layout(
-        title=f"Weekly Predictions for {location_id}",
-        xaxis_title="Week",
-        yaxis_title="Prediction Score",
-        hovermode='x unified',
-        height=400
-    )
-    
-    return fig
 
 def create_calendar_events(scheduled_events):
     """Convert scheduled events to calendar format"""
@@ -248,15 +165,19 @@ def create_calendar_events(scheduled_events):
         })
     return events
 
+
 # Initialize session state
 if 'selected_locations' not in st.session_state:
     st.session_state.selected_locations = {}
 
+
 if 'scheduled_events' not in st.session_state:
     st.session_state.scheduled_events = []
 
+
 if 'map_clicks' not in st.session_state:
     st.session_state.map_clicks = 0
+
 
 # Main dashboard
 def main():
@@ -267,15 +188,15 @@ def main():
     if df.empty:
         st.error("Cannot proceed without data.")
         return
-    
+
     df = prepare_data(df)
-    
+
     # Get available weeks
     prediction_cols, available_weeks = get_prediction_columns(df)
-    
+
     # Sidebar filters
     #st.sidebar.header("") #📊 Filters & Controls
-    
+
     # Week selector
     #st.sidebar.subheader("📅 Week Selection")
     selected_week = st.sidebar.slider(
@@ -287,7 +208,7 @@ def main():
         help="Choose which week's predictions to display on the map"
     )
     st.sidebar.info(f"Showing predictions for Week {selected_week}")
-    
+
     # Prediction score filter
     min_score, max_score = st.sidebar.slider(
         "Prediction Score Range",
@@ -296,7 +217,7 @@ def main():
         value=(float(df['avg_prediction'].min()), float(df['avg_prediction'].max())),
         step=0.01
     )
-    
+
     # Altitude filter
     min_alt, max_alt = st.sidebar.slider(
         "Altitude Range (m)",
@@ -305,7 +226,7 @@ def main():
         value=(int(df['Altitudine'].min()), int(df['Altitudine'].max())),
         step=10
     )
-    
+
     # Apply filters
     filtered_df = df[
         (df['avg_prediction'] >= min_score) & 
@@ -313,19 +234,19 @@ def main():
         (df['Altitudine'] >= min_alt) & 
         (df['Altitudine'] <= max_alt)
     ]
-    
+
     # Main content tabs
     tab1, tab2 = st.tabs(["🗺️ Map Explorer", "📅 Calendar"])
-    
+
     with tab1:
         st.subheader("Interactive Prediction Map")
-        
+
         col1, col2 = st.columns([2, 1])
-        
+
         with col1:
             # Create prediction map with selection capability
             fig = create_prediction_map(filtered_df, selected_week)
-            
+
             # Add visual indicators for already selected locations green circle
             if st.session_state.selected_locations:
                 # Filter for selected locations that are still in the current filtered dataset
@@ -343,14 +264,13 @@ def main():
                             ),
                             text=selected_locations_df['GRID_ID'],
                             name='Selected Locations',
-                            hovertemplate='<b>SELECTED:</b> %{text}<br>' +
-                                        '<b>Click to view details</b><extra></extra>',
+                            hovertemplate='<b>SELECTED:</b> %{text}<br>' + '<b>Click to view details</b><extra></extra>',
                             showlegend=True  # Show in legend
                         )
                     )
-            
+
             st.info("💡 **Click on map points to select locations for hive placement**")
-            
+
             # Enable selection with rerun on click
             chart_selection = st.plotly_chart(
                 fig, 
@@ -359,20 +279,20 @@ def main():
                 selection_mode=["points"],
                 key="map_selection"
             )
-            
+
             # Handle point selections
             if chart_selection and hasattr(chart_selection, 'selection') and chart_selection.selection and chart_selection.selection.get('points'):
                 selected_points = chart_selection.selection['points']
-                
+
                 for point in selected_points:
                     # Get the point index to identify the location
                     point_index = point.get('point_index', point.get('pointIndex'))
-                    
+
                     # Get the corresponding location from filtered_df
                     if point_index is not None and point_index < len(filtered_df):
                         selected_location = filtered_df.iloc[point_index]
                         location_id = selected_location['GRID_ID']
-                        
+
                         # Add to selected locations if not already there
                         if location_id not in st.session_state.selected_locations:
                             st.session_state.selected_locations[location_id] = {
@@ -386,16 +306,16 @@ def main():
                             }
                             st.success(f"✅ Added {location_id} to selection!")
                             st.rerun()
-        
+
         with col2:
             st.subheader("🎯 Selected Locations")
-            
+
             if st.session_state.selected_locations:
                 for loc_id, loc_data in st.session_state.selected_locations.items():
                     # Get current week prediction if week is selected
                     current_prediction = loc_data['avg_prediction']
                     prediction_label = "Avg"
-                    
+
                     if selected_week:
                         location_row = df[df['GRID_ID'] == loc_id]
                         if not location_row.empty:
@@ -403,31 +323,30 @@ def main():
                             if week_col in location_row.columns:
                                 current_prediction = location_row[week_col].iloc[0]
                                 prediction_label = f"W{selected_week}"
-                    
+
                     # Simplified display
                     with st.container():
                         col_info, col_remove = st.columns([4, 1])
-                        
+
                         with col_info:
                             st.write(f"**📍 {loc_data['label']}** ({loc_id})")
                             st.write(f"🍯 {prediction_label}: {current_prediction:.3f} | ⛰️ {loc_data['altitude']}m")
-                        
+
                         with col_remove:
-                            if st.button("🗑️", key=f"remove_{loc_id}", 
-                                       help=f"Remove {loc_data['label']}"):
+                            if st.button("🗑️", key=f"remove_{loc_id}", help=f"Remove {loc_data['label']}"):
                                 del st.session_state.selected_locations[loc_id]
                                 st.rerun()
-                        
+
                         st.divider()
                 
                 # Summary and actions
                 st.subheader("📊 Summary")
                 st.write(f"**{len(st.session_state.selected_locations)}** locations selected")
-                
+
                 if st.button("🗑️ Clear All", type="secondary"):
                     st.session_state.selected_locations = {}
                     st.rerun()
-                    
+
             else:
                 st.info("🗺️ Click on map points to select locations for hive placement")
                 st.write("**How to select locations:**")
@@ -435,53 +354,53 @@ def main():
                 st.write("2. 📍 Selected locations will appear in this panel")
                 st.write("3. 🟢 Selected locations will show in green on the map")
                 st.write("4. 📅 Use selected locations in the Calendar tab")
-    
+
     with tab2:
         st.subheader("Schedule Hive Placements")
-        
+
         if not st.session_state.selected_locations:
             st.warning("Please select locations first in the Map Explorer tab.")
         else:
             # Form section
             st.subheader("📝 New Schedule")
-            
+
             col1, col2 = st.columns([1, 1])
-            
+
             with col1:
-                
+
                 selected_loc_for_schedule = st.selectbox(
                     "Select Location",
                     list(st.session_state.selected_locations.keys()),
                     format_func=lambda x: st.session_state.selected_locations[x]['label']
                 )
-                
+
                 start_date = st.date_input(
                     "Start Date",
                     value=datetime.now().date()
                 )
-                
+
                 duration = st.number_input(
                     "Duration (days)",
                     min_value=1,
                     max_value=365,
                     value=30
                 )
-                
+
                 end_date = start_date + timedelta(days=duration)
                 st.write(f"End Date: {end_date}")
-                
+
                 num_hives = st.number_input(
                     "Number of Hives",
                     min_value=1,
                     max_value=100,
                     value=5
                 )
-                
+
                 notes = st.text_area(
                     "Notes",
                     placeholder="Add any additional notes about this hive placement..."
                 )
-                
+
                 if st.button("📅 Schedule Placement"):
                     new_event = {
                         'id': len(st.session_state.scheduled_events),
@@ -493,27 +412,27 @@ def main():
                         'notes': notes,
                         'created_at': datetime.now().isoformat()
                     }
-                    
+
                     st.session_state.scheduled_events.append(new_event)
                     st.success("✅ Hive placement scheduled!")
                     st.rerun()
-            
+
             with col2:
                 st.info("📝 Use the form on the left to schedule hive placements")
-                
+
         # Calendar section - moved outside columns for better rendering
         st.markdown("---")
         st.subheader("📅 Interactive Calendar")
-        
+
         # Calendar view options
         calendar_view = st.radio(
-            "Calendar View", 
+            "Calendar View",
             ["dayGridMonth", "dayGridWeek", "listWeek"],
             index=0,
             horizontal=True,
             help="Choose how to display the calendar"
         )
-        
+
         # Prepare events for streamlit-calendar
         calendar_events = []
         if st.session_state.scheduled_events:
@@ -533,7 +452,7 @@ def main():
                         "notes": event['notes']
                     }
                 })
-        
+
         # Calendar configuration - simplified
         calendar_options = {
             "headerToolbar": {
@@ -547,13 +466,13 @@ def main():
             "selectable": True,
             "weekends": True
         }
-        
+
         # Debug: Show calendar data before rendering
         if st.checkbox("🔍 Debug Calendar", help="Show calendar configuration for debugging"):
             st.write("**Calendar Events:**", calendar_events)
             st.write("**Calendar Options:**", calendar_options)
             st.write(f"**Number of events:** {len(calendar_events)}")
-        
+
         # Display the calendar with simplified approach
         st.write("---")  # Visual separator
         st.write("**Calendar should appear below:**")
@@ -564,29 +483,29 @@ def main():
             options=calendar_options,
             key=f"hive_calendar_{calendar_view}"  # Dynamic key based on view
         )
-        
+
         st.write("**Calendar component called successfully**")
         
         # Show calendar state for debugging
         if st.checkbox("🔍 Show Calendar State"):
             st.write("**Calendar State:**", calendar_state)
-        
+
         # Handle calendar events (editing, deleting, etc.)
         if calendar_state.get("eventsSet"):
             # Handle event changes
             pass
-            
+
         if calendar_state.get("eventClick"):
             clicked_event = calendar_state["eventClick"]["event"]
             st.info(f"📍 **{clicked_event.get('title', 'Unknown Event')}**")
-            
+
             # Show event details
             extended_props = clicked_event.get("extendedProps", {})
             if extended_props:
                 st.write(f"**Location:** {extended_props.get('location_label', 'N/A')}")
                 st.write(f"**Hives:** {extended_props.get('hives', 'N/A')}")
                 st.write(f"**Notes:** {extended_props.get('notes', 'No notes')}")
-                
+
                 # Option to delete the event
                 if st.button("🗑️ Delete Event", key=f"delete_calendar_event_{clicked_event.get('id')}"):
                     event_id = int(clicked_event.get('id', -1))
@@ -596,30 +515,30 @@ def main():
                     ]
                     st.success("Event deleted!")
                     st.rerun()
-        
+
         if calendar_state.get("select"):
             selection = calendar_state["select"]
             st.info(f"📅 **Date Range Selected:** {selection['start']} to {selection['end']}")
             st.info("💡 Use the form above to create a new hive placement for the selected dates.")
-        
+
         # Show summary if no events
         if not st.session_state.scheduled_events:
             st.info("📅 No hive placements scheduled yet. Use the form above to create your first schedule!")
-        
+
         # Export functionality
         if st.session_state.scheduled_events:
             st.subheader("📤 Export Schedule")
-            
+
             export_data = pd.DataFrame(st.session_state.scheduled_events)
             csv = export_data.to_csv(index=False)
-            
+
             st.download_button(
                 label="💾 Download Schedule as CSV",
                 data=csv,
                 file_name=f"hive_schedule_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv"
             )
-    
+
     #with tab3:
     #    st.subheader("📊 Analytics & Insights")
     #    
@@ -698,18 +617,18 @@ def main():
     #                "📅 Most Common Best Week",
     #                int(filtered_df['best_week_num'].mode()[0])
     #            )
-    #    
+    #
     #    # Scheduled events analytics
     #    if st.session_state.scheduled_events:
     #        st.subheader("📊 Scheduled Events Analytics")
-    #        
+    #
     #        events_df = pd.DataFrame(st.session_state.scheduled_events)
     #        events_df['start_date'] = pd.to_datetime(events_df['start_date'])
     #        events_df['end_date'] = pd.to_datetime(events_df['end_date'])
     #        events_df['duration'] = (events_df['end_date'] - events_df['start_date']).dt.days
-    #        
+    #
     #        col_event1, col_event2, col_event3 = st.columns(3)
-    #        
+    #
     #        with col_event1:
     #            st.metric("📅 Total Events", len(events_df))
     #        with col_event2:
@@ -717,5 +636,7 @@ def main():
     #        with col_event3:
     #            st.metric("📊 Avg Duration", f"{events_df['duration'].mean():.1f} days")
 
+
 if __name__ == "__main__":
-    main() 
+    main()
+
