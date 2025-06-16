@@ -139,7 +139,7 @@ def create_prediction_map(df, selected_week=None, metric='avg_prediction'):
         color=color_metric,
         size="avg_prediction",
         hover_data=hover_data,
-        color_continuous_scale="Viridis",
+        color_continuous_scale="Cividis",
         size_max=15,
         zoom=8,
         mapbox_style="open-street-map",
@@ -326,11 +326,12 @@ def main():
             # Create prediction map with selection capability
             fig = create_prediction_map(filtered_df, selected_week)
             
-            # Add visual indicators for already selected locations
+            # Add visual indicators for already selected locations as gold stars
             if st.session_state.selected_locations:
+                # Filter for selected locations that are still in the current filtered dataset
                 selected_locations_df = filtered_df[filtered_df['GRID_ID'].isin(st.session_state.selected_locations.keys())]
                 if not selected_locations_df.empty:
-                    # Add selected locations as a separate trace with different styling
+                    # Add selected locations as a separate trace with gold star styling
                     fig.add_trace(
                         go.Scattermapbox(
                             lat=selected_locations_df["Latitudine"],
@@ -338,14 +339,16 @@ def main():
                             mode='markers',
                             marker=dict(
                                 size=20,
-                                color='gold',
-                                symbol='star'
+                                color='green',
                             ),
                             text=selected_locations_df['GRID_ID'],
                             name='Selected Locations',
-                            hovertemplate='<b>SELECTED:</b> %{text}<extra></extra>'
+                            hovertemplate='<b>SELECTED:</b> %{text}<br>' +
+                                        '<b>Click to view details</b><extra></extra>',
+                            showlegend=True  # Show in legend
                         )
                     )
+                    st.info(f"⭐ **{len(selected_locations_df)} selected locations** shown as gold stars on the map")
             
             st.info("💡 **Click on map points to select locations for hive placement**")
             
@@ -427,11 +430,12 @@ def main():
                     st.rerun()
                     
             else:
-                st.info("🗺️ Click on map points to select locations")
-                st.write("**Instructions:**")
-                st.write("1. Click on any point on the map")
-                st.write("2. Selected locations appear here")
-                st.write("3. Selected locations show as ⭐ gold stars")
+                st.info("🗺️ Click on map points to select locations for hive placement")
+                st.write("**How to select locations:**")
+                st.write("1. 🖱️ Click on any colored point on the map")
+                st.write("2. 📍 Selected locations will appear in this panel")
+                st.write("3. ⭐ Selected locations will show as **gold stars** on the map")
+                st.write("4. 📅 Use selected locations in the Calendar tab")
     
     with tab2:
         st.subheader("Schedule Hive Placements")
