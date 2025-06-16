@@ -315,7 +315,7 @@ def main():
     ]
     
     # Main content tabs
-    tab1, tab2, tab3 = st.tabs(["🗺️ Map Explorer", "📅 Schedule Hives", "📊 Analytics"])
+    tab1, tab2 = st.tabs(["🗺️ Map Explorer", "📅 Calendar"])
     
     with tab1:
         st.subheader("Interactive Prediction Map")
@@ -617,102 +617,102 @@ def main():
                 mime="text/csv"
             )
     
-    with tab3:
-        st.subheader("📊 Analytics & Insights")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Distribution of prediction scores
-            fig_dist = px.histogram(
-                filtered_df,
-                x='avg_prediction',
-                nbins=20,
-                title="Distribution of Average Prediction Scores",
-                labels={'avg_prediction': 'Average Prediction Score', 'count': 'Number of Locations'}
-            )
-            fig_dist.update_layout(showlegend=False)
-            st.plotly_chart(fig_dist, use_container_width=True)
-            
-            # Show weekly predictions if a specific week is selected
-            if selected_week:
-                week_col = f'week_{selected_week}_prediction'
-                if week_col in filtered_df.columns:
-                    fig_week = px.histogram(
-                        filtered_df,
-                        x=week_col,
-                        nbins=20,
-                        title=f"Distribution of Week {selected_week} Predictions",
-                        labels={week_col: f'Week {selected_week} Prediction Score', 'count': 'Number of Locations'}
-                    )
-                    fig_week.update_layout(showlegend=False)
-                    st.plotly_chart(fig_week, use_container_width=True)
-            else:
-                # Altitude vs Prediction correlation
-                fig_corr = px.scatter(
-                    filtered_df,
-                    x='Altitudine',
-                    y='avg_prediction',
-                    color='best_week_num',
-                    title="Altitude vs Average Prediction Score",
-                    labels={'Altitudine': 'Altitude (m)', 'avg_prediction': 'Avg Prediction Score'}
-                )
-                st.plotly_chart(fig_corr, use_container_width=True)
-        
-        with col2:
-            # Best weeks distribution
-            week_counts = filtered_df['best_week_num'].value_counts().sort_index()
-            fig_weeks = px.bar(
-                x=week_counts.index,
-                y=week_counts.values,
-                title="Distribution of Best Performance Weeks",
-                labels={'x': 'Week Number', 'y': 'Number of Locations'}
-            )
-            st.plotly_chart(fig_weeks, use_container_width=True)
-            
-            # Summary statistics
-            st.subheader("📈 Summary Statistics")
-            
-            col_stat1, col_stat2 = st.columns(2)
-            
-            with col_stat1:
-                st.metric(
-                    "🗺️ Total Locations",
-                    len(filtered_df),
-                    delta=f"{len(filtered_df) - len(df)} filtered"
-                )
-                st.metric(
-                    "🏔️ Avg Altitude",
-                    f"{filtered_df['Altitudine'].mean():.0f}m"
-                )
-            
-            with col_stat2:
-                st.metric(
-                    "🍯 Avg Prediction",
-                    f"{filtered_df['avg_prediction'].mean():.3f}"
-                )
-                st.metric(
-                    "📅 Most Common Best Week",
-                    int(filtered_df['best_week_num'].mode()[0])
-                )
-        
-        # Scheduled events analytics
-        if st.session_state.scheduled_events:
-            st.subheader("📊 Scheduled Events Analytics")
-            
-            events_df = pd.DataFrame(st.session_state.scheduled_events)
-            events_df['start_date'] = pd.to_datetime(events_df['start_date'])
-            events_df['end_date'] = pd.to_datetime(events_df['end_date'])
-            events_df['duration'] = (events_df['end_date'] - events_df['start_date']).dt.days
-            
-            col_event1, col_event2, col_event3 = st.columns(3)
-            
-            with col_event1:
-                st.metric("📅 Total Events", len(events_df))
-            with col_event2:
-                st.metric("🐝 Total Hives", events_df['hives'].sum())
-            with col_event3:
-                st.metric("📊 Avg Duration", f"{events_df['duration'].mean():.1f} days")
+    #with tab3:
+    #    st.subheader("📊 Analytics & Insights")
+    #    
+    #    col1, col2 = st.columns(2)
+    #    
+    #    with col1:
+    #        # Distribution of prediction scores
+    #        fig_dist = px.histogram(
+    #            filtered_df,
+    #            x='avg_prediction',
+    #            nbins=20,
+    #            title="Distribution of Average Prediction Scores",
+    #            labels={'avg_prediction': 'Average Prediction Score', 'count': 'Number of Locations'}
+    #        )
+    #        fig_dist.update_layout(showlegend=False)
+    #        st.plotly_chart(fig_dist, use_container_width=True)
+    #        
+    #        # Show weekly predictions if a specific week is selected
+    #        if selected_week:
+    #            week_col = f'week_{selected_week}_prediction'
+    #            if week_col in filtered_df.columns:
+    #                fig_week = px.histogram(
+    #                    filtered_df,
+    #                    x=week_col,
+    #                    nbins=20,
+    #                    title=f"Distribution of Week {selected_week} Predictions",
+    #                    labels={week_col: f'Week {selected_week} Prediction Score', 'count': 'Number of Locations'}
+    #                )
+    #                fig_week.update_layout(showlegend=False)
+    #                st.plotly_chart(fig_week, use_container_width=True)
+    #        else:
+    #            # Altitude vs Prediction correlation
+    #            fig_corr = px.scatter(
+    #                filtered_df,
+    #                x='Altitudine',
+    #                y='avg_prediction',
+    #                color='best_week_num',
+    #                title="Altitude vs Average Prediction Score",
+    #                labels={'Altitudine': 'Altitude (m)', 'avg_prediction': 'Avg Prediction Score'}
+    #            )
+    #            st.plotly_chart(fig_corr, use_container_width=True)
+    #    
+    #    with col2:
+    #        # Best weeks distribution
+    #        week_counts = filtered_df['best_week_num'].value_counts().sort_index()
+    #        fig_weeks = px.bar(
+    #            x=week_counts.index,
+    #            y=week_counts.values,
+    #            title="Distribution of Best Performance Weeks",
+    #            labels={'x': 'Week Number', 'y': 'Number of Locations'}
+    #        )
+    #        st.plotly_chart(fig_weeks, use_container_width=True)
+    #        
+    #        # Summary statistics
+    #        st.subheader("📈 Summary Statistics")
+    #        
+    #        col_stat1, col_stat2 = st.columns(2)
+    #        
+    #        with col_stat1:
+    #            st.metric(
+    #                "🗺️ Total Locations",
+    #                len(filtered_df),
+    #                delta=f"{len(filtered_df) - len(df)} filtered"
+    #            )
+    #            st.metric(
+    #                "🏔️ Avg Altitude",
+    #                f"{filtered_df['Altitudine'].mean():.0f}m"
+    #            )
+    #        
+    #        with col_stat2:
+    #            st.metric(
+    #                "🍯 Avg Prediction",
+    #                f"{filtered_df['avg_prediction'].mean():.3f}"
+    #            )
+    #            st.metric(
+    #                "📅 Most Common Best Week",
+    #                int(filtered_df['best_week_num'].mode()[0])
+    #            )
+    #    
+    #    # Scheduled events analytics
+    #    if st.session_state.scheduled_events:
+    #        st.subheader("📊 Scheduled Events Analytics")
+    #        
+    #        events_df = pd.DataFrame(st.session_state.scheduled_events)
+    #        events_df['start_date'] = pd.to_datetime(events_df['start_date'])
+    #        events_df['end_date'] = pd.to_datetime(events_df['end_date'])
+    #        events_df['duration'] = (events_df['end_date'] - events_df['start_date']).dt.days
+    #        
+    #        col_event1, col_event2, col_event3 = st.columns(3)
+    #        
+    #        with col_event1:
+    #            st.metric("📅 Total Events", len(events_df))
+    #        with col_event2:
+    #            st.metric("🐝 Total Hives", events_df['hives'].sum())
+    #        with col_event3:
+    #            st.metric("📊 Avg Duration", f"{events_df['duration'].mean():.1f} days")
 
 if __name__ == "__main__":
     main() 
