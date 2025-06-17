@@ -7,10 +7,12 @@ from datetime import datetime, timedelta
 import json
 import folium
 from streamlit_calendar import calendar
+from shapely.geometry import shape
+from shapely import wkt
 
 # Page configuration
 st.set_page_config(
-    page_title="Honey Production Dashboard",
+    page_title="Nectar Finder",
     page_icon="🍯",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -107,13 +109,13 @@ def create_prediction_map(df, selected_week=None, metric='avg_prediction'):
         week_col = f'week_{selected_week}_prediction'
         if week_col in df.columns:
             color_metric = week_col
-            title = f"Honey Production Predictions - Week {selected_week}"
+            title = f"Potenziale Nettarifero - Settimana {selected_week}"
         else:
             color_metric = metric
-            title = f"Honey Production Predictions - {metric.replace('_', ' ').title()}"
+            title = f"Potenziale Nettarifero - {metric.replace('_', ' ').title()}"
     else:
         color_metric = metric
-        title = f"Honey Production Predictions - {metric.replace('_', ' ').title()}"
+        title = f"Potenziale Nettarifero - {metric.replace('_', ' ').title()}"
     
     # Create hover data
     hover_data = {
@@ -152,6 +154,94 @@ def create_prediction_map(df, selected_week=None, metric='avg_prediction'):
     
     return fig
 
+def create_choropleth_map(df, selected_week=None, metric='avg_prediction'):
+    """Create a choropleth map with colored grid cells"""
+    if df.empty:
+        return go.Figure()
+    
+    # Determine the metric to display
+    if selected_week:
+        week_col = f'week_{selected_week}_prediction'
+        if week_col in df.columns:
+            color_metric = week_col
+            title = f"Potenziale Nettarifero - Settimana {selected_week}"
+        else:
+            color_metric = metric
+            title = f"Potenziale Nettarifero - {metric.replace('_', ' ').title()}"
+    else:
+        color_metric = metric
+        title = f"Potenziale Nettarifero - {metric.replace('_', ' ').title()}"
+    
+    # Convert WKT polygons to GeoJSON format
+    features = []
+    for idx, row in df.iterrows():
+        try:
+            # Parse WKT geometry
+            polygon = wkt.loads(row['geometry'])
+            
+            # Convert to GeoJSON feature
+            feature = {
+                "type": "Feature",
+                "id": row['GRID_ID'],
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [list(polygon.exterior.coords)]
+                },
+                "properties": {
+                    "GRID_ID": row['GRID_ID'],
+                    "prediction_value": row[color_metric],
+                    "altitude": row['Altitudine'],
+                    "avg_prediction": row['avg_prediction'],
+                    "max_prediction": row['max_prediction'],
+                    "best_week": row.get('best_week_num', 'N/A')
+                }
+            }
+            features.append(feature)
+        except Exception as e:
+            print(f"Error processing geometry for {row['GRID_ID']}: {e}")
+            continue
+    
+    # Create GeoJSON
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features
+    }
+    
+    # Create choropleth map
+    fig = go.Figure(go.Choroplethmapbox(
+        geojson=geojson,
+        locations=df['GRID_ID'],
+        z=df[color_metric],
+        colorscale="Cividis",  # Same as your scatter plot
+        text=df['GRID_ID'],
+        hovertemplate=(
+            '<b>%{text}</b><br>' +
+            f'{color_metric}: %{{z:.3f}}<br>' +
+            '<b>Altitude</b>: %{customdata[0]}m<br>' +
+            '<b>Avg Prediction</b>: %{customdata[1]:.3f}<br>' +
+            '<b>Best Week</b>: %{customdata[2]}<br>' +
+            '<extra></extra>'
+        ),
+        customdata=df[['Altitudine', 'avg_prediction', 'best_week_num']].values,
+        marker_opacity=0.7,
+        marker_line_width=1,
+        marker_line_color="white"
+    ))
+    
+    # Update layout
+    fig.update_layout(
+        title=title,
+        mapbox_style="open-street-map",
+        mapbox=dict(
+            center=dict(lat=df['Latitudine'].mean(), lon=df['Longitudin'].mean()),
+            zoom=8
+        ),
+        height=600,
+        margin={"r":0,"t":50,"l":0,"b":0}
+    )
+    
+    return fig
+
 
 def create_calendar_events(scheduled_events):
     """Convert scheduled events to calendar format"""
@@ -181,7 +271,7 @@ if 'map_clicks' not in st.session_state:
 
 # Main dashboard
 def main():
-    st.markdown('<h1 class="main-header">🍯 Honey Production Location Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🍯 Nectar Finder </h1>', unsafe_allow_html=True)
     
     # Load data
     df = load_data()
@@ -200,18 +290,18 @@ def main():
     # Week selector
     #st.sidebar.subheader("📅 Week Selection")
     selected_week = st.sidebar.slider(
-        "Select Week",
+        "Seleziona la settimana",
         min_value=min(available_weeks),
         max_value=max(available_weeks),
         value=min(available_weeks),
         step=1,
-        help="Choose which week's predictions to display on the map"
+        help="Seleziona la settimana per la quale visualizzare i dati"
     )
     st.sidebar.info(f"Showing predictions for Week {selected_week}")
 
     # Prediction score filter
     min_score, max_score = st.sidebar.slider(
-        "Prediction Score Range",
+        "Range di potenziale nettarifero",
         min_value=float(df['avg_prediction'].min()),
         max_value=float(df['avg_prediction'].max()),
         value=(float(df['avg_prediction'].min()), float(df['avg_prediction'].max())),
@@ -220,7 +310,7 @@ def main():
 
     # Altitude filter
     min_alt, max_alt = st.sidebar.slider(
-        "Altitude Range (m)",
+        "Altitudine (m)",
         min_value=int(df['Altitudine'].min()),
         max_value=int(df['Altitudine'].max()),
         value=(int(df['Altitudine'].min()), int(df['Altitudine'].max())),
@@ -235,17 +325,27 @@ def main():
         (df['Altitudine'] <= max_alt)
     ]
 
+    # Map type selector
+    map_type = st.sidebar.selectbox(
+        "Tipo di mappa",
+        ["Scatter Points", "Grid Cells (Choropleth)"],
+        index=0
+    )
+
     # Main content tabs
-    tab1, tab2 = st.tabs(["🗺️ Map Explorer", "📅 Calendar"])
+    tab1, tab2 = st.tabs(["🗺️ Previsioni", "📅 Calendario"])
 
     with tab1:
-        st.subheader("Interactive Prediction Map")
+        #st.subheader("Interactive Prediction Map")
 
         col1, col2 = st.columns([2, 1])
 
         with col1:
             # Create prediction map with selection capability
-            fig = create_prediction_map(filtered_df, selected_week)
+            if map_type == "Scatter Points":
+                fig = create_prediction_map(filtered_df, selected_week)
+            elif map_type == "Grid Cells (Choropleth)":
+                fig = create_choropleth_map(filtered_df, selected_week)
 
             # Add visual indicators for already selected locations green circle
             if st.session_state.selected_locations:
@@ -269,7 +369,7 @@ def main():
                         )
                     )
 
-            st.info("💡 **Click on map points to select locations for hive placement**")
+            st.info("🔍 Clicca sulla mappa per aggiungere un punto di interesse")
 
             # Enable selection with rerun on click
             chart_selection = st.plotly_chart(
@@ -308,7 +408,7 @@ def main():
                             st.rerun()
 
         with col2:
-            st.subheader("🎯 Selected Locations")
+            st.subheader("Punti selezionati")
 
             if st.session_state.selected_locations:
                 for loc_id, loc_data in st.session_state.selected_locations.items():
@@ -348,12 +448,7 @@ def main():
                     st.rerun()
 
             else:
-                st.info("🗺️ Click on map points to select locations for hive placement")
-                st.write("**How to select locations:**")
-                st.write("1. 🖱️ Click on any colored point on the map")
-                st.write("2. 📍 Selected locations will appear in this panel")
-                st.write("3. 🟢 Selected locations will show in green on the map")
-                st.write("4. 📅 Use selected locations in the Calendar tab")
+                st.info("📍 I punti selezionati appariranno in questo pannello in verde 🟢 sulla mappa ")
 
     with tab2:
         st.subheader("Schedule Hive Placements")
