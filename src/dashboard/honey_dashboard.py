@@ -2,12 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import numpy as np
-from datetime import datetime, timedelta
-import json
-import folium
+from datetime import datetime
 from streamlit_calendar import calendar
-from shapely.geometry import shape
 from shapely import wkt
 
 # Page configuration
